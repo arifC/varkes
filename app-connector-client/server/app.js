@@ -17,6 +17,7 @@ const VARKES_LOGO = path.resolve(__dirname, 'views/static/logo.svg')
 const cors = require("cors")
 const LOGO_URL = "/logo";
 const LOCAL_APIS_URL = "/local/apis";
+const REMOTE_APIS_URL = "/remote/apis";
 const CONNECTION = "/connection";
 const BATCH_REGISTERATION = "/local/apis/registeration";
 function init(varkesConfigPath = null, currentPath = "", nodePortParam = null) {
@@ -27,10 +28,12 @@ function init(varkesConfigPath = null, currentPath = "", nodePortParam = null) {
 
     var app = express()
     app.use(bodyParser.json())
+    app.use(cors())
+    app.options('*', cors())
     app.use(expressWinston.logger(LOGGER))
 
-    app.use("/remote/apis", apis.router())
-    app.use(LOCAL_APIS_URL, cors(), mockApis.router(varkesConfig))
+    app.use(REMOTE_APIS_URL, apis.router())
+    app.use(LOCAL_APIS_URL, mockApis.router(varkesConfig))
     app.use(CONNECTION, connector.router(varkesConfig, nodePortParam))
     app.use("/events", events.router())
 
@@ -41,11 +44,16 @@ function init(varkesConfigPath = null, currentPath = "", nodePortParam = null) {
         res.render('index', { appName: varkesConfig.name })
     })
     app.get("/info", function (req, res) {
+
         var info = {
             appName: varkesConfig.name,
+            connected: connection.established(),
+            insecure: connection.secure(),
+            connection: connection.established() ? connection.info() : {},
             url: {
                 logo: LOGO_URL,
                 localApis: LOCAL_APIS_URL,
+                remoteApis: REMOTE_APIS_URL,
                 connection: CONNECTION,
                 registeration: {
                     batch: BATCH_REGISTERATION,
